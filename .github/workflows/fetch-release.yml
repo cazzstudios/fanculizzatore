@@ -76,11 +76,18 @@ jobs:
             --argjson artifacts "$ARTIFACTS_JSON" \
             '{tag: $tag, notes: $notes, artifacts: $artifacts}' > _data/latest-release.json
 
+      - name: Clean up empty downloads directory
+        run: |
+          # Remove downloads directory if empty (git doesn't track empty dirs)
+          if [ -d "downloads" ] && [ -z "$(ls -A downloads 2>/dev/null)" ]; then
+            rmdir downloads
+          fi
+
       - name: Commit
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: Update latest release data"
-          file_pattern: "_data/latest-release.json downloads/*"
+          file_pattern: "."
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"
           commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
