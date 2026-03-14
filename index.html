@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fanculizzatore</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script data-goatcounter="https://fanculizza.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+    <main class="container">
+        <header>
+            <h1>Fanculizzatore</h1>
+            <p>Scegli quando e quanto insultare. Al chi e al come, ci pensa <span class="highlight-fanculizzatore">Fanculizzatore</span>.</p>
+        </header>
+
+        <section>
+            <h2>Che cos'è</h2>
+            <p><span class="highlight-fanculizzatore">Fanculizzatore</span> è un'app che ti aiuta a far sapere agli altri cosa pensi di loro.</p>
+            <p>Tieni traccia di chi ti ha fatto incazzare, quanto e perché. Poi, quando ti girano i coglioni, premi il pulsante <em>Fanculizza</em>, e un contatto a caso riceverà un insulto a caso.</p>
+            <p>Puoi regolare l'intensità dell'insulto che verrà inviato, da <em>simpatico</em> (se proprio hai voglia di giocare) a <em>brutale</em> (raccomandato). Il destinatario verrà selezionato in modo compatibile, rispettando la <em>forbice di incazzatura</em> da te impostata per ogni contatto.</p>
+        </section>
+
+        <section>
+            <h2>A cosa serve</h2>
+            <p><span class="highlight-fanculizzatore">Fanculizzatore</span> ti aiuta a gestire costruttivamente le emozioni disaccoppiando il processo di riflessione sulle motivazioni della tua rabbia dal momento distruttivo dell'insulto.</p>
+            <p> Ma soprattutto, ti aiuta a mandare tutti in culo.</p>
+        </section>
+
+        <section class="carousel">
+            <h2>Screenshot dell'app</h2>
+            <div class="carousel-track">
+                <img src="assets/mainview.png" alt="Visualizzazione principale" class="carousel-slide">
+                <img src="assets/sent.png" alt="Messaggio inviato" class="carousel-slide">
+                <img src="assets/contactview.png" alt="Visualizzazione contatti" class="carousel-slide">
+                <img src="assets/settings.png" alt="Impostazioni" class="carousel-slide">
+            </div>
+            <button class="carousel-button next" aria-label="Successivo">&#9654;</button>
+        </section>
+
+        <section>
+            <h2>Come funziona</h2>
+            <p><span class="highlight-fanculizzatore">Fanculizzatore</span> supporta tre canali di invio alternativi.</p>
+            <ol>
+                <li><strong>Email</strong> — Richiede di aver impostato credenziali SMTP o un account Google. Il destinatario riceverà l'insulto direttamente dal tuo indirizzo email.</li>
+                <li><strong>Telegram</strong> -- <span class="highlight-fanculizzatore">Fanculizzatore</span> invierà l'insulto tramite un apposito bot Telegram; il tuo nome comparirà come firma. Per funzionare, il canale Telegram richiede che il destinatario abbia precedentemente attivato il bot.</li>
+                <li><strong>Whatsapp</strong> — <span class="highlight-fanculizzatore">Fanculizzatore</span> aprirà l'app sul tuo telefono, o Whatsapp Web su desktop, con l'insulto pronto in canna; a te rimarrà solo da premere Invia.</li>
+            </ol>
+            <p>Puoi scegliere per ogni contatto l'ordine di preferenza in cui tentare i vari canali. Il canale Whatsapp può essere disattivato globalmente.</p>
+        </section>
+
+        <section>
+            <h2>Attivazione del bot telegram e privacy</h2>
+            <p>Gli insulti rivolti a contatti che non hanno attivato il bot contengono un link. Clickare il link ha l'effetto di attivare il bot per quel particolare destinatario.</p>
+            <p> Il link contiene un codice associato in modo univoco ma non reversibile al numero di telefono del contatto; questo permette a <span class="highlight-fanculizzatore">Fanculizzatore</span> di associare al numero un'utenza Telegram, senza esporre direttamente il numero di telefono.</p>
+            <p> L'associazione tra codice univoco e utenza Telegram viene mantenuta nella history del bot, che viene cancellata ogni 24 ore, e nel database locale di ogni utente di <span class="highlight-fanculizzatore">Fanculizzatore</span> che ha il numero di telefono tra i contatti.</p>
+        </section>
+
+        <section>
+            <h2>Lista dei contatti</h2>
+            <p><span class="highlight-fanculizzatore">Fanculizzatore</span> non ha accesso ai contatti nella tua rubrica --- decidi tu chi merita i tuoi insulti! Puoi aggiungere i contatti manualmente, oppure, su Android, esportarli dalla tua rubrica con l'azione Condividi. I contatti che non hai selezionato rimarranno al riparo dai tuoi insulti - finché non aggiungi anche loro, che probabilmente se lo meritavano fin dall'inizio.</p>
+            <p>Per ogni contatto, oltre a numero di telefono ed email, puoi impostare età, professione, genere, e il tipo di relazione che ha con te. Queste impostazioni verranno salvate sul tuo dispositivo e aiuteranno <span class="highlight-fanculizzatore">Fanculizzatore</span> a scegliere l'insulto più adatto all'occasione.</p>
+        </section>
+
+        <section>
+            <h2>E se qualcuno non volesse ricevere i tuoi insulti?</h2>
+            <p>Allora non doveva farti incazzare! Ma può sempre decidere di bloccare il bot, bloccarti su Whatsapp e dirigere le tue email nello spam, come quando ci si insultava manualmente.</p>
+            <p>Tuttavia, il nostro suggerimento è che installi a sua volta <span class="highlight-fanculizzatore">Fanculizzatore</span> per ripagarti della stessa moneta.</p>
+        </section>
+
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const track = document.querySelector('.carousel-track');
+                const slides = Array.from(track.children);
+                const nextButton = document.querySelector('.carousel-button.next');
+                const prevButton = document.querySelector('.carousel-button.prev');
+                
+                let currentIndex = 0;
+                
+                const moveToSlide = (index) => {
+                    track.style.transform = `translateX(-${index * 100}%)`;
+                    currentIndex = index;
+                };
+                
+                nextButton.addEventListener('click', () => {
+                    const nextIndex = (currentIndex + 1) % slides.length;
+                    moveToSlide(nextIndex);
+                });
+                
+                if (prevButton) {
+                    prevButton.addEventListener('click', () => {
+                        const prevIndex = (currentIndex - 1 + slides.length) % slides.length;
+                        moveToSlide(prevIndex);
+                    });
+                }
+                
+                // Auto-advance every 5 seconds
+                setInterval(() => {
+                    const nextIndex = (currentIndex + 1) % slides.length;
+                    moveToSlide(nextIndex);
+                }, 5000);
+            });
+        </script>
+
+        <section class="downloads">
+            <h2>Download <span id="download-version"></span></h2>
+            <div id="download-list">
+                <p>Caricamento...</p>
+            </div>
+        </section>
+        
+        <script>
+            async function loadDownloads() {
+                const downloadList = document.getElementById('download-list');
+                
+                try {
+                    const response = await fetch('/fanculizza/_data/latest-release.json');
+                    if (!response.ok) {
+                        throw new Error('Impossibile caricare i dati della release');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (!data.tag || data.artifacts.length === 0) {
+                        downloadList.innerHTML = '<p>Nessuna release disponibile al momento.</p>';
+                        return;
+                    }
+                    
+                    document.getElementById('download-version').textContent = data.tag;
+                    
+                    let artifactsHtml = '<ul>';
+                    for (const artifact of data.artifacts) {
+                        const ext = artifact.name.split('.').pop().toUpperCase();
+                        artifactsHtml += `<li><a href="${artifact.download_url}" download onclick="trackDownload('${artifact.name}')">${ext} - ${artifact.name}</a></li>`;
+                    }
+                    artifactsHtml += '</ul>';
+                    
+                    downloadList.innerHTML = artifactsHtml;
+                    
+                } catch (error) {
+                    downloadList.innerHTML = '<p>Errore nel caricamento dei download.</p>';
+                }
+            }
+            
+            // Load downloads when page loads
+            document.addEventListener('DOMContentLoaded', loadDownloads);
+
+            function trackDownload(filename) {
+                if (window.goatcounter && window.goatcounter.count) {
+                    window.goatcounter.count({
+                        path: '/download',
+                        title: 'Download: ' + filename,
+                        event: true
+                    });
+                }
+            }
+        </script>
+
+        <footer>
+            <p>&copy; 2026 <span class="highlight-fanculizzatore">Fanculizzatore</span> - L'app per mandare tutti in culo con stile</p>
+        </footer>
+    </main>
+</body>
+</html>

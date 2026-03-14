@@ -1,0 +1,86 @@
+name: Fetch Latest Release
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  fetch-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Fetch latest release
+        run: |
+          mkdir -p _data
+          mkdir -p downloads
+
+          # Use ASSETS_ACCESS_TOKEN for accessing the private repository
+          # Fallback to GH_TOKEN if ASSETS_ACCESS_TOKEN is not set (for backward compatibility)
+          ASSETS_TOKEN=${{ secrets.ASSETS_ACCESS_TOKEN }}
+          if [ -z "$ASSETS_TOKEN" ]; then
+            ASSETS_TOKEN=${{ secrets.GH_TOKEN }}
+            echo "Warning: ASSETS_ACCESS_TOKEN not set, falling back to GH_TOKEN for private repo access"
+          fi
+
+          # Fetch only the latest release
+          curl -s -H "Authorization: token $ASSETS_TOKEN" \
+            https://api.github.com/repos/cazzstudios/fanculizzatore-source/releases/latest > /tmp/release.json
+          
+          # Check if we got a valid release
+          TAG=$(jq -r '.tag_name // empty' /tmp/release.json)
+          if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
+            echo '{"tag": "", "notes": "", "artifacts": []}' > _data/latest-release.json
+            exit 0
+          fi
+
+          NOTES=$(jq -r '.body // ""' /tmp/release.json)
+          
+          # Get filtered assets with ID and browser_download_url
+          FILTERED_ASSETS_JSON=$(jq '[.assets[] | select(.name | endswith(".apk") or endswith(".exe") or endswith(".deb") or endswith(".rpm")) | {id: .id, name: .name, size: .size, download_url: .browser_download_url}]' /tmp/release.json)
+          
+          # Initialize artifacts array
+          ARTIFACTS_JSON="[]"
+          
+          # Process each filtered asset if any exist
+          ASSET_COUNT=$(echo "$FILTERED_ASSETS_JSON" | jq -r 'length')
+          if [ "$ASSET_COUNT" -gt 0 ]; then
+            # Download each asset using GitHub API (to ensure we can access private assets)
+            for i in $(seq 0 $((ASSET_COUNT - 1))); do
+              # Extract asset properties
+              ID=$(echo "$FILTERED_ASSETS_JSON" | jq -r ".[$i].id")
+              NAME=$(echo "$FILTERED_ASSETS_JSON" | jq -r ".[$i].name")
+              SIZE=$(echo "$FILTERED_ASSETS_JSON" | jq -r ".[$i].size")
+              
+              echo "Downloading $NAME (ID: $ID)..."
+              curl -s -f -L -H "Authorization: token $ASSETS_TOKEN" -H "Accept: application/octet-stream" \
+                "https://api.github.com/repos/cazzstudios/fanculizzatore-source/releases/assets/$ID" \
+                -o "downloads/$NAME" || echo "Warning: Failed to download $NAME"
+              
+              # Add to artifacts array for JSON
+              ARTIFACTS_JSON=$(echo "$ARTIFACTS_JSON" | jq --arg name "$NAME" --arg size "$SIZE" --arg url "downloads/$NAME" '. + [{name: $name, size: ($size|tonumber), download_url: $url}]')
+            done
+          fi
+          
+          # Create final JSON by constructing the complete object
+          jq -n \
+            --arg tag "$TAG" \
+            --arg notes "$NOTES" \
+            --argjson artifacts "$ARTIFACTS_JSON" \
+            '{tag: $tag, notes: $notes, artifacts: $artifacts}' > _data/latest-release.json
+
+      - name: Commit
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: Update latest release data"
+          file_pattern: "_data/latest-release.json downloads/*"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
+          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"

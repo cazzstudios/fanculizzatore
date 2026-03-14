@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download - Fanculizzatore</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .artifact-card {
+            border: 1px solid var(--muted-border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .artifact-card h3 {
+            margin-top: 0;
+        }
+        .download-btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-right: 1rem;
+        }
+        .download-btn:hover {
+            background: var(--primary-hover);
+        }
+        .checksum {
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: var(--muted-background);
+            padding: 0.5rem;
+            word-break: break-all;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+        .error {
+            color: red;
+            padding: 1rem;
+            border: 1px solid red;
+            border-radius: 4px;
+        }
+    </style>
+    <script data-goatcounter="https://fanculizza.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+    <main class="container">
+        <nav>
+            <ul>
+                <li><a href="index.html">&larr; Torna al sito</a></li>
+            </ul>
+        </nav>
+        
+        <h1>Download Fanculizzatore</h1>
+        
+        <div id="content">
+            <div class="loading">Caricamento...</div>
+        </div>
+        
+        <section id="releases">
+            <h2>Release</h2>
+            <div id="release-info"></div>
+        </section>
+        
+        <section>
+            <h2>Verifica integrit&agrave;</h2>
+            <p>Per verificare che il file scaricato non sia stato manomesso, puoi calcolare il checksum SHA256:</p>
+            <pre><code>sha256sum -c checksum.txt</code></pre>
+            <p>I checksum sono visualizzati sotto ogni pulsante di download.</p>
+        </section>
+    </main>
+
+    <script>
+        async function loadReleases() {
+            const content = document.getElementById('content');
+            
+            try {
+                const response = await fetch('/fanculizza/_data/latest-release.json');
+                if (!response.ok) {
+                    throw new Error('Impossibile caricare i dati della release');
+                }
+                
+                const data = await response.json();
+                
+                if (!data.tag || data.artifacts.length === 0) {
+                    content.innerHTML = `
+                        <div class="error">
+                            <p>Nessuna release disponibile al momento.</p>
+                            <p>Controlla pi&ugrave; tardi o visita la pagina delle release su GitHub.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let artifactsHtml = '';
+                
+                for (const artifact of data.artifacts) {
+                    const sizeMB = (artifact.size / (1024 * 1024)).toFixed(2);
+                    const ext = artifact.name.split('.').pop().toUpperCase();
+                    
+                    artifactsHtml += `
+                        <div class="artifact-card">
+                            <h3>${ext}</h3>
+                            <p>File: <strong>${artifact.name}</strong></p>
+                            <p>Dimensione: ${sizeMB} MB</p>
+                            <a href="${artifact.download_url}" class="download-btn" download onclick="trackDownload('${artifact.name}')">Scarica</a>
+                        </div>
+                    `;
+                }
+                
+                content.innerHTML = `
+                    <p>Versione: <strong>${data.tag}</strong></p>
+                    ${data.notes ? `<p>${data.notes.replace(/\n/g, '<br>')}</p>` : ''}
+                    ${artifactsHtml}
+                `;
+                
+            } catch (error) {
+                content.innerHTML = `
+                    <div class="error">
+                        <p>Errore nel caricamento dei download:</p>
+                        <p>${error.message}</p>
+                        <p>Puoi scaricare direttamente dalla pagina delle release su GitHub.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        loadReleases();
+
+        function trackDownload(filename) {
+            if (window.goatcounter && window.goatcounter.count) {
+                window.goatcounter.count({
+                    path: '/download',
+                    title: 'Download: ' + filename,
+                    event: true
+                });
+            }
+        }
+    </script>
+</body>
+</html>
