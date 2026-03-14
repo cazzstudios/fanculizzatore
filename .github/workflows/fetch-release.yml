@@ -23,16 +23,26 @@ jobs:
           mkdir -p downloads
 
           # Use ASSETS_ACCESS_TOKEN for accessing the private repository
-          # Fallback to GH_TOKEN if ASSETS_ACCESS_TOKEN is not set (for backward compatibility)
-          ASSETS_TOKEN=${{ secrets.ASSETS_ACCESS_TOKEN }}
+          # Fallback to GITHUB_TOKEN if ASSETS_ACCESS_TOKEN is not set
+          ASSETS_TOKEN="${{ secrets.ASSETS_ACCESS_TOKEN }}"
           if [ -z "$ASSETS_TOKEN" ]; then
-            ASSETS_TOKEN=${{ secrets.GH_TOKEN }}
-            echo "Warning: ASSETS_ACCESS_TOKEN not set, falling back to GH_TOKEN for private repo access"
+            echo "Warning: ASSETS_ACCESS_TOKEN not set, falling back to GITHUB_TOKEN"
+            ASSETS_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          else
+            echo "ASSETS_ACCESS_TOKEN is set"
           fi
 
+          # Debug: Show token length (first 10 chars masked)
+          echo "Token length: ${#ASSETS_TOKEN}"
+
           # Fetch only the latest release
+          echo "Fetching release from private repo..."
           curl -s -H "Authorization: token $ASSETS_TOKEN" \
             https://api.github.com/repos/cazzstudios/fanculizzatore-source/releases/latest > /tmp/release.json
+          
+          # Debug: Show what we got
+          echo "API response:"
+          cat /tmp/release.json | head -20
           
           # Check if we got a valid release
           TAG=$(jq -r '.tag_name // empty' /tmp/release.json)
