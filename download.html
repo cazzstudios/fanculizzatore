@@ -80,7 +80,7 @@
             const content = document.getElementById('content');
             
             try {
-                const response = await fetch('/fanculizza/_data/latest-release.json');
+                const response = await fetch('_data/latest-release.json');
                 if (!response.ok) {
                     throw new Error('Impossibile caricare i dati della release');
                 }
