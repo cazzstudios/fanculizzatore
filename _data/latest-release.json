@@ -3,18 +3,23 @@
   "notes": "Fanculizzatore 2.0.0 for all platforms",
   "artifacts": [
     {
+      "name": "app-release.apk",
+      "size": 101956604,
+      "download_url": "downloads/app-release.apk"
+    },
+    {
       "name": "fanculizzatore-2.0.0-1.x86_64.rpm",
-      "size": 22817938,
+      "size": 22817984,
       "download_url": "downloads/fanculizzatore-2.0.0-1.x86_64.rpm"
     },
     {
       "name": "fanculizzatore-2.0.0-installer.exe",
-      "size": 16323331,
+      "size": 16323334,
       "download_url": "downloads/fanculizzatore-2.0.0-installer.exe"
     },
     {
       "name": "fanculizzatore_2.0.0_amd64.deb",
-      "size": 22837220,
+      "size": 22836730,
       "download_url": "downloads/fanculizzatore_2.0.0_amd64.deb"
     }
   ]
