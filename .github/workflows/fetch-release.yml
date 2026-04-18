@@ -9,6 +9,10 @@ permissions:
   contents: write
   actions: read
 
+concurrency:
+  group: fetch-release
+  cancel-in-progress: true
+
 jobs:
   fetch-release:
     runs-on: ubuntu-latest
@@ -21,6 +25,7 @@ jobs:
         run: |
           mkdir -p _data
           mkdir -p downloads
+          mkdir -p downloads/.tmp
 
           # Use ASSETS_ACCESS_TOKEN for accessing the private repository
           # Fallback to GITHUB_TOKEN if ASSETS_ACCESS_TOKEN is not set
@@ -32,18 +37,11 @@ jobs:
             echo "ASSETS_ACCESS_TOKEN is set"
           fi
 
-          # Debug: Show token length (first 10 chars masked)
-          echo "Token length: ${#ASSETS_TOKEN}"
-
           # Fetch only the latest release
           echo "Fetching release from private repo..."
           curl -s -H "Authorization: token $ASSETS_TOKEN" \
             https://api.github.com/repos/cazzstudios/fanculizzatore-source/releases/latest > /tmp/release.json
-          
-          # Debug: Show what we got
-          echo "API response:"
-          cat /tmp/release.json | head -20
-          
+
           # Check if we got a valid release
           TAG=$(jq -r '.tag_name // empty' /tmp/release.json)
           if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
@@ -51,14 +49,28 @@ jobs:
             exit 0
           fi
 
+          # Check if release has changed (skip if tag matches existing)
+          if [ -f "_data/latest-release.json" ]; then
+            EXISTING_TAG=$(jq -r '.tag // empty' _data/latest-release.json)
+            if [ "$EXISTING_TAG" = "$TAG" ]; then
+              echo "Release unchanged: $TAG"
+              exit 0
+            fi
+            echo "Release changed: $EXISTING_TAG -> $TAG"
+          fi
+
+          # Clean up old binaries before downloading new ones
+          echo "Cleaning up old binaries..."
+          rm -f downloads/*.apk downloads/*.exe downloads/*.deb downloads/*.rpm 2>/dev/null
+
           NOTES=$(jq -r '.body // ""' /tmp/release.json)
-          
+
           # Get filtered assets with ID and browser_download_url
           FILTERED_ASSETS_JSON=$(jq '[.assets[] | select(.name | endswith(".apk") or endswith(".exe") or endswith(".deb") or endswith(".rpm")) | {id: .id, name: .name, size: .size, download_url: .browser_download_url}]' /tmp/release.json)
-          
+
           # Initialize artifacts array
           ARTIFACTS_JSON="[]"
-          
+
           # Process each filtered asset if any exist
           ASSET_COUNT=$(echo "$FILTERED_ASSETS_JSON" | jq -r 'length')
           if [ "$ASSET_COUNT" -gt 0 ]; then
@@ -68,17 +80,34 @@ jobs:
               ID=$(echo "$FILTERED_ASSETS_JSON" | jq -r ".[$i].id")
               NAME=$(echo "$FILTERED_ASSETS_JSON" | jq -r ".[$i].name")
               SIZE=$(echo "$FILTERED_ASSETS_JSON" | jq -r ".[$i].size")
-              
-              echo "Downloading $NAME (ID: $ID)..."
+
+              echo "Downloading $NAME (ID: $ID, expected size: $SIZE)..."
+
+              # Download to .tmp/ first for atomic operation
               curl -s -f -L -H "Authorization: token $ASSETS_TOKEN" -H "Accept: application/octet-stream" \
                 "https://api.github.com/repos/cazzstudios/fanculizzatore-source/releases/assets/$ID" \
-                -o "downloads/$NAME" || echo "Warning: Failed to download $NAME"
-              
+                -o "downloads/.tmp/$NAME" || {
+                  echo "Warning: Failed to download $NAME"
+                  rm -f "downloads/.tmp/$NAME"
+                  continue
+                }
+
+              # Verify file size matches expected
+              ACTUAL_SIZE=$(stat -c%s "downloads/.tmp/$NAME" 2>/dev/null || echo "0")
+              if [ "$ACTUAL_SIZE" != "$SIZE" ]; then
+                echo "Error: Size mismatch for $NAME (expected: $SIZE, got: $ACTUAL_SIZE)"
+                rm -f "downloads/.tmp/$NAME"
+                continue
+              fi
+
+              # Move to final location atomically
+              mv "downloads/.tmp/$NAME" "downloads/$NAME"
+
               # Add to artifacts array for JSON
               ARTIFACTS_JSON=$(echo "$ARTIFACTS_JSON" | jq --arg name "$NAME" --arg size "$SIZE" --arg url "downloads/$NAME" '. + [{name: $name, size: ($size|tonumber), download_url: $url}]')
             done
           fi
-          
+
           # Create final JSON by constructing the complete object
           jq -n \
             --arg tag "$TAG" \
@@ -92,12 +121,16 @@ jobs:
           if [ -d "downloads" ] && [ -z "$(ls -A downloads 2>/dev/null)" ]; then
             rmdir downloads
           fi
+          # Clean up .tmp directory if exists
+          if [ -d "downloads/.tmp" ]; then
+            rmdir downloads/.tmp 2>/dev/null || true
+          fi
 
       - name: Commit
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: Update latest release data"
-          file_pattern: "."
+          file_pattern: "downloads/ _data/"
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"
-          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com"

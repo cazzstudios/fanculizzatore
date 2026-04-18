@@ -45,13 +45,22 @@ test.describe('Fanculizzatore Landing Page', () => {
   });
 
   test('download links exist', async ({ page }) => {
+    if (baseUrl.startsWith('file://')) {
+      test.skip();
+      return;
+    }
+    
     await page.goto(baseUrl);
     
-    const linuxLink = page.locator('a[href*="fanculizzatore"]:not([href*="deb"])');
-    const debLink = page.locator('a[href*="fanculizzatore_1.0.0_amd64.deb"]');
+    await page.waitForSelector('#download-list ul', { timeout: 10000 });
     
-    await expect(linuxLink).toHaveAttribute('href', /github\.com\/fanculizzatore\/fanculizzatore\/releases\/download\/v1\.0\.0\/fanculizzatore/);
-    await expect(debLink).toHaveAttribute('href', /github\.com\/fanculizzatore\/fanculizzatore\/releases\/download\/v1\.0\.0\/fanculizzatore_1\.0\.0_amd64\.deb/);
+    const versionSpan = page.locator('#download-version');
+    await expect(versionSpan).toHaveText('v2.0.0');
+    
+    await expect(page.locator('a[href="downloads/app-release.apk"]')).toBeVisible();
+    await expect(page.locator('a[href="downloads/fanculizzatore-2.0.0-1.x86_64.rpm"]')).toBeVisible();
+    await expect(page.locator('a[href="downloads/fanculizzatore-2.0.0-installer.exe"]')).toBeVisible();
+    await expect(page.locator('a[href="downloads/fanculizzatore_2.0.0_amd64.deb"]')).toBeVisible();
   });
 
   test('page is responsive on mobile', async ({ page }) => {
