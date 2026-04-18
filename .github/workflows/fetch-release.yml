@@ -39,11 +39,14 @@ jobs:
 
           # Fetch only the latest release
           echo "Fetching release from private repo..."
-          curl -s -H "Authorization: token $ASSETS_TOKEN" \
-            https://api.github.com/repos/cazzstudios/fanculizzatore-source/releases/latest > /tmp/release.json
+          if ! curl -s -f -H "Authorization: token $ASSETS_TOKEN" \
+            https://api.github.com/repos/cazzstudios/fanculizzatore-source/releases/latest > /tmp/release.json; then
+            echo "Error: Failed to fetch release from API"
+            exit 1
+          fi
 
           # Check if we got a valid release
-          TAG=$(jq -r '.tag_name // empty' /tmp/release.json)
+          TAG="$(jq -r '.tag_name // empty' /tmp/release.json)"
           if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
             echo '{"tag": "", "notes": "", "artifacts": []}' > _data/latest-release.json
             exit 0
@@ -51,7 +54,7 @@ jobs:
 
           # Check if release has changed (skip if tag matches existing)
           if [ -f "_data/latest-release.json" ]; then
-            EXISTING_TAG=$(jq -r '.tag // empty' _data/latest-release.json)
+            EXISTING_TAG="$(jq -r '.tag // empty' _data/latest-release.json)"
             if [ "$EXISTING_TAG" = "$TAG" ]; then
               echo "Release unchanged: $TAG"
               exit 0
@@ -63,23 +66,23 @@ jobs:
           echo "Cleaning up old binaries..."
           rm -f downloads/*.apk downloads/*.exe downloads/*.deb downloads/*.rpm 2>/dev/null
 
-          NOTES=$(jq -r '.body // ""' /tmp/release.json)
+          NOTES="$(jq -r '.body // ""' /tmp/release.json)"
 
           # Get filtered assets with ID and browser_download_url
-          FILTERED_ASSETS_JSON=$(jq '[.assets[] | select(.name | endswith(".apk") or endswith(".exe") or endswith(".deb") or endswith(".rpm")) | {id: .id, name: .name, size: .size, download_url: .browser_download_url}]' /tmp/release.json)
+          FILTERED_ASSETS_JSON="$(jq '[.assets[] | select(.name | endswith(".apk") or endswith(".exe") or endswith(".deb") or endswith(".rpm")) | {id: .id, name: .name, size: .size, download_url: .browser_download_url}]' /tmp/release.json)"
 
           # Initialize artifacts array
           ARTIFACTS_JSON="[]"
 
           # Process each filtered asset if any exist
-          ASSET_COUNT=$(echo "$FILTERED_ASSETS_JSON" | jq -r 'length')
+          ASSET_COUNT="$(echo "$FILTERED_ASSETS_JSON" | jq -r 'length')"
           if [ "$ASSET_COUNT" -gt 0 ]; then
             # Download each asset using GitHub API (to ensure we can access private assets)
             for i in $(seq 0 $((ASSET_COUNT - 1))); do
               # Extract asset properties
-              ID=$(echo "$FILTERED_ASSETS_JSON" | jq -r ".[$i].id")
-              NAME=$(echo "$FILTERED_ASSETS_JSON" | jq -r ".[$i].name")
-              SIZE=$(echo "$FILTERED_ASSETS_JSON" | jq -r ".[$i].size")
+              ID="$(echo "$FILTERED_ASSETS_JSON" | jq -r ".[$i].id")"
+              NAME="$(echo "$FILTERED_ASSETS_JSON" | jq -r ".[$i].name")"
+              SIZE="$(echo "$FILTERED_ASSETS_JSON" | jq -r ".[$i].size")"
 
               echo "Downloading $NAME (ID: $ID, expected size: $SIZE)..."
 
