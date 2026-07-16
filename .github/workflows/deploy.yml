@@ -21,10 +21,17 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v4
+      - name: Prepare site
+        run: |
+          mkdir -p _site
+          cp index.html download.html privacy.html style.css .nojekyll _site/
+          [ -d assets ] && cp -r assets _site/
+          [ -d _data ] && cp -r _data _site/
+          [ -d downloads ] && cp -r downloads _site/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: '_site'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
